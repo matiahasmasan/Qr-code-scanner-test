@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QR Scanner — Library Comparison</title>
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <script src="https://unpkg.com/jsqr@1.4.0/dist/jsQR.js"></script>
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --border: #e2e8f0;
+      --text: #1e293b;
+      --muted: #64748b;
+      --success: #16a34a;
+      --success-bg: #f0fdf4;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 24px 16px 48px;
+    }
+
+    .container { max-width: 620px; margin: 0 auto; }
+
+    header { text-align: center; margin-bottom: 28px; }
+    header h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 6px; }
+    header p { color: var(--muted); font-size: 0.875rem; }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      gap: 4px;
+      background: var(--border);
+      padding: 4px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+    }
+    .tab {
+      flex: 1;
+      padding: 8px 6px;
+      border: none;
+      background: transparent;
+      border-radius: 7px;
+      cursor: pointer;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--muted);
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+    .tab.active {
+      background: var(--card);
+      color: var(--primary);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .panel { display: none; }
+    .panel.active { display: block; }
+
+    /* Cards */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 18px 20px;
+      margin-bottom: 14px;
+    }
+
+    .lib-header { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+    .lib-name { font-weight: 700; font-size: 0.95rem; }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 20px;
+      font-size: 0.72rem;
+      font-weight: 600;
+    }
+    .badge-blue   { background: #dbeafe; color: #1d4ed8; }
+    .badge-green  { background: #dcfce7; color: #15803d; }
+    .badge-purple { background: #f3e8ff; color: #7c3aed; }
+    .badge-amber  { background: #fef3c7; color: #b45309; }
+
+    .lib-desc { color: var(--muted); font-size: 0.83rem; line-height: 1.55; }
+
+    /* Scanner area */
+    .scan-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 18px 20px;
+      margin-bottom: 14px;
+    }
+
+    .btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      background: var(--primary);
+      color: #fff;
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+      margin-bottom: 14px;
+    }
+    .btn:hover { background: var(--primary-hover); }
+    .btn.stop  { background: #dc2626; }
+    .btn.stop:hover { background: #b91c1c; }
+
+    /* html5-qrcode override — hide the default library title */
+    #html5qrcode-reader span { display: none; }
+    #html5qrcode-reader { border-radius: 8px; overflow: hidden; }
+
+    video.cam-video, canvas.cam-canvas {
+      width: 100%;
+      height: auto;
+      border-radius: 8px;
+      display: none;
+      background: #0f172a;
+      max-height: 300px;
+      object-fit: cover;
+    }
+
+    /* Result box */
+    .result-box {
+      display: none;
+      background: var(--success-bg);
+      border: 1px solid #86efac;
+      border-radius: 8px;
+      padding: 14px;
+      margin-top: 12px;
+    }
+    .result-box.show { display: block; }
+    .result-header { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+    .result-icon  { color: var(--success); font-size: 1rem; }
+    .result-label { font-size: 0.72rem; font-weight: 700; color: var(--success); text-transform: uppercase; letter-spacing: 0.06em; }
+    .result-time  { margin-left: auto; font-size: 0.72rem; color: var(--muted); background: #dcfce7; padding: 2px 7px; border-radius: 4px; font-weight: 600; }
+
+    .result-text {
+      font-family: 'Courier New', monospace;
+      font-size: 0.875rem;
+      word-break: break-all;
+      color: var(--text);
+      background: #fff;
+      padding: 8px 10px;
+      border-radius: 6px;
+      border: 1px solid #bbf7d0;
+      margin-bottom: 10px;
+    }
+    .copy-btn {
+      padding: 5px 12px;
+      border: 1px solid #86efac;
+      border-radius: 6px;
+      background: #fff;
+      color: var(--success);
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.1s;
+    }
+    .copy-btn:hover { background: #f0fdf4; }
+    .copy-btn.copied { background: #dcfce7; }
+
+    /* Comparison table */
+    .compare-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      margin-top: 4px;
+    }
+    .compare-card h3 {
+      padding: 13px 18px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+    th {
+      text-align: left;
+      padding: 9px 14px;
+      font-weight: 600;
+      color: var(--muted);
+      border-bottom: 1px solid var(--border);
+      background: var(--bg);
+    }
+    td { padding: 9px 14px; border-bottom: 1px solid var(--border); }
+    tr:last-child td { border-bottom: none; }
+    .yes { color: var(--success); font-weight: 600; }
+    .no  { color: #dc2626; font-weight: 600; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <h1>QR Scanner — Library Test</h1>
+    <p>Comparing the top 3 JS libraries for a fidelity points webapp</p>
+  </header>
+
+  <div class="tabs">
+    <button class="tab active" data-tab="html5">html5-qrcode</button>
+    <button class="tab"        data-tab="nimiq">qr-scanner</button>
+    <button class="tab"        data-tab="jsqr">jsQR</button>
+  </div>
+
+  <!-- ── html5-qrcode ─────────────────────────────────── -->
+  <div id="panel-html5" class="panel active">
+    <div class="card">
+      <div class="lib-header">
+        <span class="lib-name">html5-qrcode</span>
+        <span class="badge badge-blue">★ 4.1k</span>
+        <span class="badge badge-amber">~2 MB</span>
+        <span class="badge badge-green">Built-in UI</span>
+      </div>
+      <p class="lib-desc">Full-featured library that renders its own camera widget. Easiest integration — ideal for rapid prototyping. Large bundle size is its main downside.</p>
+    </div>
+    <div class="scan-card">
+      <div id="html5qrcode-reader"></div>
+      <div class="result-box" id="result-html5">
+        <div class="result-header">
+          <span class="result-icon">✓</span>
+          <span class="result-label">Scanned</span>
+        </div>
+        <div class="result-text" id="text-html5"></div>
+        <button class="copy-btn" id="copy-html5">Copy</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── nimiq/qr-scanner ─────────────────────────────── -->
+  <div id="panel-nimiq" class="panel">
+    <div class="card">
+      <div class="lib-header">
+        <span class="lib-name">nimiq/qr-scanner</span>
+        <span class="badge badge-blue">★ 3.5k</span>
+        <span class="badge badge-green">~16 KB gz</span>
+        <span class="badge badge-purple">ZXing-based</span>
+      </div>
+      <p class="lib-desc">Lightest option with the highest detection rate (2–3× better than competitors per benchmarks). No UI included — you bring your own. Best choice for production.</p>
+    </div>
+    <div class="scan-card">
+      <button class="btn" id="nimiq-btn">▶ Start Camera</button>
+      <video id="nimiq-video" class="cam-video" playsinline muted></video>
+      <div class="result-box" id="result-nimiq">
+        <div class="result-header">
+          <span class="result-icon">✓</span>
+          <span class="result-label">Scanned</span>
+          <span class="result-time" id="time-nimiq"></span>
+        </div>
+        <div class="result-text" id="text-nimiq"></div>
+        <button class="copy-btn" id="copy-nimiq">Copy</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── jsQR ─────────────────────────────────────────── -->
+  <div id="panel-jsqr" class="panel">
+    <div class="card">
+      <div class="lib-header">
+        <span class="lib-name">jsQR</span>
+        <span class="badge badge-blue">★ 3.5k</span>
+        <span class="badge badge-green">~35 KB</span>
+        <span class="badge badge-amber">Pure JS</span>
+      </div>
+      <p class="lib-desc">Low-level pure-JS decoder. You manage the camera stream and canvas yourself — maximum control, zero magic. Note: development has been dormant since 2021.</p>
+    </div>
+    <div class="scan-card">
+      <button class="btn" id="jsqr-btn">▶ Start Camera</button>
+      <canvas id="jsqr-canvas" class="cam-canvas"></canvas>
+      <div class="result-box" id="result-jsqr">
+        <div class="result-header">
+          <span class="result-icon">✓</span>
+          <span class="result-label">Scanned</span>
+          <span class="result-time" id="time-jsqr"></span>
+        </div>
+        <div class="result-text" id="text-jsqr"></div>
+        <button class="copy-btn" id="copy-jsqr">Copy</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Comparison table ─────────────────────────────── -->
+  <div class="compare-card">
+    <h3>Quick Comparison</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Feature</th>
+          <th>html5-qrcode</th>
+          <th>qr-scanner</th>
+          <th>jsQR</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>Bundle size</td>    <td>~2 MB</td>            <td>~16 KB gz</td>    <td>~35 KB</td></tr>
+        <tr><td>Built-in UI</td>   <td class="yes">✓ Yes</td><td class="no">✗ No</td><td class="no">✗ No</td></tr>
+        <tr><td>Detection rate</td><td>Good</td>              <td>Best</td>          <td>Good</td></tr>
+        <tr><td>Scan outline</td>  <td class="yes">✓</td>    <td class="yes">✓</td> <td class="yes">✓ manual</td></tr>
+        <tr><td>ES module</td>     <td class="no">✗</td>     <td class="yes">✓</td> <td class="no">✗</td></tr>
+        <tr><td>Maintained</td>    <td class="yes">✓</td>    <td class="yes">✓</td> <td class="no">Dormant</td></tr>
+        <tr><td>Best for</td>      <td>Prototyping</td>       <td>Production</td>    <td>Full control</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+<script type="module">
+  import QrScanner from 'https://cdn.jsdelivr.net/npm/qr-scanner@1.4.2/qr-scanner.min.js';
+  QrScanner.WORKER_PATH = 'https://cdn.jsdelivr.net/npm/qr-scanner@1.4.2/qr-scanner-worker.min.js';
+
+  // ── State ────────────────────────────────────────────────────
+  let activeTab     = 'html5';
+  let html5Scanner  = null;
+  let nimiqScanner  = null;
+  let nimiqRunning  = false;
+  let jsqrStream    = null;
+  let jsqrVideo     = null;
+  let jsqrFrame     = null;
+  let jsqrRunning   = false;
+  let jsqrFound     = false;
+
+  // ── Helpers ──────────────────────────────────────────────────
+  function showResult(tab, text, ms) {
+    document.getElementById(`text-${tab}`).textContent = text;
+    if (ms !== undefined) document.getElementById(`time-${tab}`).textContent = `${ms}ms`;
+    document.getElementById(`result-${tab}`).classList.add('show');
+
+    const btn = document.getElementById(`copy-${tab}`);
+    btn.textContent = 'Copy';
+    btn.onclick = () => {
+      navigator.clipboard.writeText(text);
+      btn.textContent = 'Copied!';
+      btn.classList.add('copied');
+      setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 1500);
+    };
+  }
+
+  // ── html5-qrcode ─────────────────────────────────────────────
+  function initHtml5() {
+    document.getElementById('html5qrcode-reader').innerHTML = '';
+    document.getElementById('result-html5').classList.remove('show');
+    html5Scanner = new Html5QrcodeScanner(
+      'html5qrcode-reader',
+      { fps: 10, qrbox: { width: 240, height: 240 }, rememberLastUsedCamera: true },
+      false
+    );
+    html5Scanner.render(
+      (text) => showResult('html5', text),
+      () => {}
+    );
+  }
+
+  async function stopHtml5() {
+    if (html5Scanner) {
+      try { await html5Scanner.clear(); } catch (_) {}
+      html5Scanner = null;
+    }
+  }
+
+  // ── nimiq/qr-scanner ─────────────────────────────────────────
+  const nimiqBtn   = document.getElementById('nimiq-btn');
+  const nimiqVideo = document.getElementById('nimiq-video');
+
+  nimiqBtn.addEventListener('click', async () => {
+    if (nimiqRunning) {
+      if (nimiqScanner) { nimiqScanner.destroy(); nimiqScanner = null; }
+      nimiqVideo.style.display = 'none';
+      nimiqBtn.textContent = '▶ Start Camera';
+      nimiqBtn.classList.remove('stop');
+      nimiqRunning = false;
+      return;
+    }
+
+    nimiqBtn.textContent = '⏹ Stop';
+    nimiqBtn.classList.add('stop');
+    nimiqVideo.style.display = 'block';
+    nimiqRunning = true;
+
+    const t0 = Date.now();
+    nimiqScanner = new QrScanner(
+      nimiqVideo,
+      result => {
+        const data = typeof result === 'string' ? result : result.data;
+        showResult('nimiq', data, Date.now() - t0);
+      },
+      { highlightScanRegion: true, highlightCodeOutline: true }
+    );
+    await nimiqScanner.start();
+  });
+
+  async function stopNimiq() {
+    if (nimiqScanner) { nimiqScanner.destroy(); nimiqScanner = null; }
+    nimiqVideo.style.display = 'none';
+    nimiqBtn.textContent = '▶ Start Camera';
+    nimiqBtn.classList.remove('stop');
+    nimiqRunning = false;
+  }
+
+  // ── jsQR ─────────────────────────────────────────────────────
+  const jsqrBtn    = document.getElementById('jsqr-btn');
+  const jsqrCanvas = document.getElementById('jsqr-canvas');
+  const jsqrCtx    = jsqrCanvas.getContext('2d');
+
+  jsqrBtn.addEventListener('click', async () => {
+    if (jsqrRunning) { stopJsqr(); return; }
+
+    try {
+      jsqrStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
+      });
+    } catch (err) {
+      alert('Camera access denied: ' + err.message);
+      return;
+    }
+
+    jsqrVideo = document.createElement('video');
+    jsqrVideo.srcObject = jsqrStream;
+    jsqrVideo.setAttribute('playsinline', '');
+    jsqrVideo.muted = true;
+    await jsqrVideo.play();
+
+    jsqrCanvas.style.display = 'block';
+    jsqrBtn.textContent = '⏹ Stop';
+    jsqrBtn.classList.add('stop');
+    jsqrRunning = true;
+    jsqrFound   = false;
+    const t0 = Date.now();
+
+    function tick() {
+      if (jsqrVideo.readyState === jsqrVideo.HAVE_ENOUGH_DATA) {
+        jsqrCanvas.width  = jsqrVideo.videoWidth;
+        jsqrCanvas.height = jsqrVideo.videoHeight;
+        jsqrCtx.drawImage(jsqrVideo, 0, 0, jsqrCanvas.width, jsqrCanvas.height);
+
+        const img  = jsqrCtx.getImageData(0, 0, jsqrCanvas.width, jsqrCanvas.height);
+        const code = jsQR(img.data, img.width, img.height, { inversionAttempts: 'dontInvert' });
+
+        if (code && !jsqrFound) {
+          jsqrFound = true;
+          showResult('jsqr', code.data, Date.now() - t0);
+
+          // Draw outline
+          const { topLeftCorner: tl, topRightCorner: tr, bottomRightCorner: br, bottomLeftCorner: bl } = code.location;
+          jsqrCtx.strokeStyle = '#16a34a';
+          jsqrCtx.lineWidth   = Math.max(4, jsqrCanvas.width * 0.005);
+          jsqrCtx.beginPath();
+          jsqrCtx.moveTo(tl.x, tl.y);
+          jsqrCtx.lineTo(tr.x, tr.y);
+          jsqrCtx.lineTo(br.x, br.y);
+          jsqrCtx.lineTo(bl.x, bl.y);
+          jsqrCtx.closePath();
+          jsqrCtx.stroke();
+        }
+      }
+      if (jsqrRunning) jsqrFrame = requestAnimationFrame(tick);
+    }
+    jsqrFrame = requestAnimationFrame(tick);
+  });
+
+  function stopJsqr() {
+    if (jsqrStream) { jsqrStream.getTracks().forEach(t => t.stop()); jsqrStream = null; }
+    if (jsqrFrame)  { cancelAnimationFrame(jsqrFrame); jsqrFrame = null; }
+    if (jsqrVideo)  { jsqrVideo.srcObject = null; jsqrVideo = null; }
+    jsqrCanvas.style.display = 'none';
+    jsqrBtn.textContent = '▶ Start Camera';
+    jsqrBtn.classList.remove('stop');
+    jsqrRunning = false;
+  }
+
+  // ── Tab switching ─────────────────────────────────────────────
+  document.querySelectorAll('.tab').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const tab = btn.dataset.tab;
+      if (tab === activeTab) return;
+
+      if (activeTab === 'html5') await stopHtml5();
+      if (activeTab === 'nimiq') await stopNimiq();
+      if (activeTab === 'jsqr')  stopJsqr();
+
+      document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+      document.getElementById(`panel-${tab}`).classList.add('active');
+      activeTab = tab;
+
+      if (tab === 'html5') initHtml5();
+    });
+  });
+
+  // ── Boot ──────────────────────────────────────────────────────
+  initHtml5();
+</script>
+</body>
+</html>
